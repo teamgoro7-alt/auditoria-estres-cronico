@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auditoría de Estrés Crónico™ | GORO PRG</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: #0a0a0a;
+      color: #ffffff;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    button { cursor: pointer; background: none; border: none; font-family: inherit; }
+    a { text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    /* ─── BRAND ──────────────────────────────────────────────── */
+    const ACCENT   = '#22c55e';
+    const CARD_BG  = '#111111';
+    const CARD_BD  = '#1c1c1c';
+    const TRACK_BG = '#1e1e1e';
+
+    /* ─── DATA ───────────────────────────────────────────────── */
+    const QUESTIONS = [
+      // PILAR 0 — DESCANSO
+      { pilar:0, num:1,
+        text:"¿Cómo describes tu sueño en los últimos 3 meses?",
+        options:[
+          "Duermo bien y me levanto descansado",
+          "Duermo bien pero me levanto cansado",
+          "Me cuesta conciliar o me despierto por la noche",
+          "Duermo mal de forma habitual y el día empieza ya agotado",
+          "Tengo insomnio o me despierto a las 3-4am con el cerebro encendido"
+        ]
+      },
+      { pilar:0, num:2,
+        text:"Al llegar a mitad de la tarde (16-18h), ¿cómo está tu energía?",
+        options:[
+          "Sigo igual de activo que por la mañana",
+          "Noto bajón leve pero sigo funcionando",
+          "Bajón claro, necesito café o algo dulce",
+          "Me cuesta concentrarme, quiero parar",
+          "Estoy agotado, funciono en piloto automático"
+        ]
+      },
+      { pilar:0, num:3,
+        text:'¿Cuánto tiempo tardas en "apagar" el cerebro por la noche?',
+        options:[
+          "Me duermo en menos de 15 minutos",
+          "15-30 minutos, sin problema",
+          "30-60 minutos, la cabeza sigue activa",
+          "Más de una hora pensando en trabajo o pendientes",
+          "No consigo desconectar, o me quedo dormido por agotamiento puro"
+        ]
+      },
+      // PILAR 1 — NUTRICIÓN
+      { pilar:1, num:4,
+        text:"¿Cómo describes tu alimentación durante la semana laboral?",
+        options:[
+          "Estructurada, como a horas fijas y con criterio",
+          "Bastante ordenada, aunque con algún descuido",
+          "Irregular — a veces bien, a veces no como o como cualquier cosa",
+          "Casi siempre improviso, no tengo estructura",
+          "Como muy mal o saltándome comidas por falta de tiempo"
+        ]
+      },
+      { pilar:1, num:5,
+        text:"¿Cuánto dependes del café u otros estimulantes para funcionar?",
+        options:[
+          "No los necesito, los tomo por placer",
+          "1-2 cafés al día, sin dependencia",
+          "3+ cafés al día, noto que sin ellos rindo menos",
+          "Necesito café para arrancar y para aguantar la tarde",
+          "Sin café o estimulantes no funciono, y aun así estoy cansado"
+        ]
+      },
+      { pilar:1, num:6,
+        text:"Después de comer, ¿cómo te encuentras?",
+        options:[
+          "Con energía, listo para seguir",
+          "Normal, sin cambios notables",
+          "Algo pesado o con somnolencia leve",
+          "Bajón claro de energía, me cuesta concentrarme",
+          "Necesito parar sí o sí, el bajón es consistente"
+        ]
+      },
+      // PILAR 2 — ENTRENAMIENTO
+      { pilar:2, num:7,
+        text:"¿Con qué frecuencia entrenas de forma estructurada?",
+        options:[
+          "4+ veces por semana con consistencia",
+          "3 veces por semana regularmente",
+          "1-2 veces, con semanas que me salto",
+          "Entreno esporádicamente, sin estructura",
+          "No entreno o llevo más de un mes sin hacerlo"
+        ]
+      },
+      { pilar:2, num:8,
+        text:"¿Cómo te sientes físicamente después de entrenar?",
+        options:[
+          "Activado, con buena recuperación",
+          "Bien en general, aunque algo cansado",
+          "Más cansado de lo que debería para el esfuerzo",
+          "Me cuesta recuperarme entre sesiones",
+          "El entrenamiento me deja agotado días después, o lo evito por eso"
+        ]
+      },
+      { pilar:2, num:9,
+        text:"En el último año, ¿cómo ha evolucionado tu composición corporal?",
+        options:[
+          "Ha mejorado o se mantiene igual",
+          "Prácticamente igual, sin cambios notables",
+          "He ganado algo de grasa o perdido algo de músculo",
+          "Cambio claro: más grasa, menos tono, especialmente en abdomen",
+          "Me he deteriorado físicamente de forma evidente"
+        ]
+      },
+      // PILAR 3 — HÁBITOS Y BIOHACKING
+      { pilar:3, num:10,
+        text:"¿Cómo describes tu nivel de energía a lo largo del día?",
+        options:[
+          "Estable de mañana a noche",
+          "Algún bajón puntual pero recupero bien",
+          "Picos y valles claros durante el día",
+          "Energía baja la mayor parte del día",
+          "Agotado de forma constante, funciono por inercia"
+        ]
+      },
+      { pilar:3, num:11,
+        text:"¿Con qué frecuencia tienes síntomas físicos asociados al estrés? (tensión, digestión, dolor de cabeza, irritabilidad)",
+        options:[
+          "Raramente o nunca",
+          "Ocasionalmente, sin que afecte mi día",
+          "Varias veces por semana",
+          "Casi a diario",
+          "Es mi estado habitual"
+        ]
+      },
+      { pilar:3, num:12,
+        text:"¿Cómo está tu tolerancia al estrés comparada con hace 2-3 años?",
+        options:[
+          "Igual o mejor",
+          "Algo menor, pero manejable",
+          "Claramente peor — cosas pequeñas me afectan más",
+          "Mi umbral ha bajado mucho, me desborda con facilidad",
+          "Siento que he perdido la capacidad de absorber presión"
+        ]
+      },
+      // PILAR 4 — PLANIFICACIÓN
+      { pilar:4, num:13,
+        text:"¿Cómo terminas la mayoría de tus jornadas laborales?",
+        options:[
+          "Con lo importante hecho y desconecto bien",
+          "Casi todo hecho, algún pendiente menor",
+          "Con sensación de no haber avanzado lo suficiente",
+          "Con la lista igual o más larga que por la mañana",
+          "Agotado y con la sensación de haber apagado fuegos todo el día"
+        ]
+      },
+      { pilar:4, num:14,
+        text:"¿Consigues desconectar del trabajo fuera del horario laboral?",
+        options:[
+          "Sí, tengo límites claros",
+          "Mayormente sí, aunque pienso en cosas puntualmente",
+          "Me cuesta, el trabajo ocupa gran parte de mi cabeza",
+          "Casi nunca desconecto de verdad",
+          "El trabajo está siempre presente, incluso en vacaciones o fines de semana"
+        ]
+      },
+      { pilar:4, num:15,
+        text:"¿Cómo describirías tu carga mental diaria?",
+        options:[
+          "Manejable, tengo claridad sobre mis prioridades",
+          "Algo elevada pero la gestiono",
+          "Alta, siento que hay demasiado en mi cabeza",
+          "Muy alta, me cuesta priorizar y ejecutar con claridad",
+          "Desbordante, vivo en modo reactivo permanente"
+        ]
+      }
+    ];
+
+    const PILAR_NAMES = [
+      "Descanso",
+      "Nutrición",
+      "Entrenamiento",
+      "Hábitos y Biohacking",
+      "Planificación y Organización"
+    ];
+
+    const PILAR_DATA = [
+      {
+        subject: "el descanso",
+        body: "Tus respuestas muestran que tu cuerpo no está recuperándose adecuadamente entre jornadas de trabajo. Esto provoca: menor energía disponible, peor concentración y toma de decisiones, mayor sensación de estrés acumulado, dependencia creciente de estimulantes."
+      },
+      {
+        subject: "la nutrición",
+        body: "Sin una base nutricional estructurada, tu cuerpo no tiene los sustratos para sostener el rendimiento cognitivo y físico que tu trabajo exige. Esto provoca: bajones de energía recurrentes, niebla mental post-comida, mayor cortisol basal, peor composición corporal."
+      },
+      {
+        subject: "el entrenamiento",
+        body: "La falta de estímulo físico estructurado está deteriorando tu capacidad de gestionar el estrés a nivel fisiológico. Esto provoca: menor resiliencia hormonal, peor calidad del sueño, acumulación de tensión sin válvula de escape, deterioro progresivo de la composición corporal."
+      },
+      {
+        subject: "los hábitos diarios",
+        body: "Los pequeños patrones que repites cada día están amplificando tu carga de estrés en lugar de reducirla. Esto provoca: energía inestable a lo largo del día, mayor reactividad emocional, síntomas físicos crónicos de baja intensidad, sensación constante de estar al límite."
+      },
+      {
+        subject: "la planificación",
+        body: "La falta de estructura diaria está generando una carga mental innecesaria que agota tu sistema antes de que empiece el trabajo real. Esto provoca: sensación permanente de ir apagando fuegos, dificultad para desconectar al final del día, incapacidad para ejecutar en profundo, sensación de no llegar a todo aunque trabajes muchas horas."
+      }
+    ];
+
+    /* ─── HELPERS ────────────────────────────────────────────── */
+    function stressLevel(score) {
+      if (score <= 25) return { label: "Bajo impacto",                       color: "#22c55e" };
+      if (score <= 50) return { label: "Estrés acumulado",                   color: "#eab308" };
+      if (score <= 75) return { label: "Estrés afectando tu rendimiento",    color: "#f97316" };
+      return              { label: "Estrés crónico severo",                  color: "#ef4444" };
+    }
+
+    function barColor(v) {
+      if (v > 70) return "#22c55e";
+      if (v >= 40) return "#eab308";
+      return "#ef4444";
+    }
+
+    /* ─── HOOKS ──────────────────────────────────────────────── */
+    function useCounter(target, duration = 1600, delay = 300) {
+      const [val, setVal] = useState(0);
+      useEffect(() => {
+        const t = setTimeout(() => {
+          let start = null;
+          const tick = (ts) => {
+            if (!start) start = ts;
+            const p = Math.min((ts - start) / duration, 1);
+            const e = 1 - Math.pow(1 - p, 3); // ease-out cubic
+            setVal(Math.round(e * target));
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }, delay);
+        return () => clearTimeout(t);
+      }, [target]);
+      return val;
+    }
+
+    /* ─── COMPONENTS ─────────────────────────────────────────── */
+    function Bar({ value, color, delay = 0 }) {
+      const [w, setW] = useState(0);
+      useEffect(() => {
+        const t = setTimeout(() => setW(value), delay + 150);
+        return () => clearTimeout(t);
+      }, [value]);
+      return (
+        <div style={{ height:"10px", borderRadius:"999px", backgroundColor:TRACK_BG, overflow:"hidden" }}>
+          <div style={{
+            height: "100%", borderRadius: "999px",
+            width: `${w}%`, backgroundColor: color,
+            transition: "width 1.3s cubic-bezier(0.4,0,0.2,1)"
+          }} />
+        </div>
+      );
+    }
+
+    function Gauge({ value, color }) {
+      const [animVal, setAnimVal] = useState(0);
+      const r = 72;
+      const C = 2 * Math.PI * r;
+      const offset = C * (1 - animVal / 100);
+
+      useEffect(() => {
+        const t = setTimeout(() => setAnimVal(value), 450);
+        return () => clearTimeout(t);
+      }, [value]);
+
+      return (
+        <svg width="200" height="200" viewBox="0 0 200 200" style={{ display:"block" }}>
+          <circle cx="100" cy="100" r={r} fill="none" stroke={TRACK_BG} strokeWidth="13" />
+          <circle
+            cx="100" cy="100" r={r}
+            fill="none" stroke={color} strokeWidth="13"
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={offset}
+            transform="rotate(-90 100 100)"
+            style={{ transition:"stroke-dashoffset 1.8s cubic-bezier(0.4,0,0.2,1)" }}
+          />
+        </svg>
+      );
+    }
+
+    function Option({ label, index, selected, disabled, onClick }) {
+      const [hov, setHov] = useState(false);
+      const bg  = selected ? ACCENT    : hov ? "#181818" : CARD_BG;
+      const bd  = selected ? ACCENT    : hov ? "#2c2c2c" : CARD_BD;
+      const txt = selected ? "#000"    : "#d4d4d4";
+      const ltr = selected ? "#000000" : hov ? "#777" : "#444";
+      return (
+        <button
+          onClick={onClick} disabled={disabled}
+          onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+          style={{
+            width:"100%", textAlign:"left", padding:"14px 16px",
+            backgroundColor:bg, border:`1px solid ${bd}`, borderRadius:"4px",
+            color:txt, fontSize:"14px", fontWeight:"500",
+            transition:"background-color 0.12s, border-color 0.12s",
+            cursor: disabled ? "default" : "pointer"
+          }}
+        >
+          <span style={{ display:"flex", alignItems:"flex-start", gap:"12px" }}>
+            <span style={{
+              flexShrink:0, width:"20px", height:"20px", borderRadius:"50%",
+              border:`1px solid ${ltr}`, color:ltr,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:"10px", fontWeight:"700", marginTop:"1px",
+              transition:"color 0.12s, border-color 0.12s"
+            }}>
+              {String.fromCharCode(65 + index)}
+            </span>
+            <span style={{ lineHeight:"1.45" }}>{label}</span>
+          </span>
+        </button>
+      );
+    }
+
+    /* ─── SCREEN 1 — INTRO ───────────────────────────────────── */
+    function IntroScreen({ onStart }) {
+      return (
+        <div style={{
+          minHeight:"100vh", display:"flex", alignItems:"center",
+          justifyContent:"center", padding:"48px 20px"
+        }}>
+          <div style={{ width:"100%", maxWidth:"420px", textAlign:"center" }}>
+
+            <p style={{ fontSize:"20px", fontWeight:"900", letterSpacing:"0.25em",
+              textTransform:"uppercase", color:ACCENT, marginBottom:"36px" }}>
+              GORO PRG
+            </p>
+
+            <h1 style={{
+              fontSize:"clamp(36px, 8vw, 52px)", fontWeight:"900",
+              color:"#fff", lineHeight:"1", letterSpacing:"-1.5px", marginBottom:"24px"
+            }}>
+              AUDITORÍA DE<br />ESTRÉS CRÓNICO™
+            </h1>
+
+            <div style={{
+              display:"flex", alignItems:"center", gap:"12px",
+              marginBottom:"24px", padding:"0 20px"
+            }}>
+              <div style={{ flex:1, height:"1px", backgroundColor:CARD_BD }} />
+              <div style={{ width:"6px", height:"6px", borderRadius:"50%", backgroundColor:ACCENT }} />
+              <div style={{ flex:1, height:"1px", backgroundColor:CARD_BD }} />
+            </div>
+
+            <p style={{
+              fontSize:"clamp(15px, 3.5vw, 17px)", color:"#9a9a9a",
+              lineHeight:"1.65", marginBottom:"36px", padding:"0 8px"
+            }}>
+              Descubre si el estrés está afectando tu energía, productividad y rendimiento sin que te des cuenta.
+            </p>
+
+            <div style={{
+              display:"flex", alignItems:"center", justifyContent:"center",
+              gap:"12px", marginBottom:"40px",
+              fontSize:"13px", color:"#555"
+            }}>
+              <span>3 minutos</span>
+              <span style={{ width:"1px", height:"14px", backgroundColor:"#2a2a2a" }} />
+              <span>15 preguntas</span>
+              <span style={{ width:"1px", height:"14px", backgroundColor:"#2a2a2a" }} />
+              <span>Gratuito</span>
+            </div>
+
+            <button
+              onClick={onStart}
+              style={{
+                width:"100%", padding:"16px 32px",
+                backgroundColor:ACCENT, color:"#000",
+                fontSize:"13px", fontWeight:"800",
+                letterSpacing:"0.12em", textTransform:"uppercase",
+                border:"none", borderRadius:"3px",
+                cursor:"pointer", transition:"filter 0.15s, transform 0.1s"
+              }}
+              onMouseEnter={e => e.currentTarget.style.filter = "brightness(1.1)"}
+              onMouseLeave={e => e.currentTarget.style.filter = "brightness(1)"}
+              onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+              onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+            >
+              Comenzar auditoría →
+            </button>
+
+            <p style={{ marginTop:"20px", fontSize:"11px", color:"#333" }}>
+              Confidencial · Sin registro · Sin presión
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    /* ─── SCREEN 2 — QUESTIONS ───────────────────────────────── */
+    function QuestionsScreen({ onComplete }) {
+      const [idx, setIdx]       = useState(0);
+      const [answers, setAns]   = useState(new Array(15).fill(null));
+      const [chosen, setChosen] = useState(null);
+      const [fading, setFading] = useState(false);
+
+      const q = QUESTIONS[idx];
+
+      const pick = (val) => {
+        if (fading) return;
+        setChosen(val);
+        setFading(true);
+        const next = [...answers];
+        next[idx] = val;
+        setTimeout(() => {
+          if (idx < 14) {
+            setAns(next); setIdx(idx + 1);
+            setChosen(null); setFading(false);
+          } else {
+            onComplete(next);
+          }
+        }, 360);
+      };
+
+      return (
+        <div style={{
+          minHeight:"100vh", display:"flex", flexDirection:"column",
+          maxWidth:"580px", margin:"0 auto", padding:"32px 20px 24px"
+        }}>
+          {/* Progress */}
+          <div style={{ marginBottom:"40px" }}>
+            <div style={{
+              display:"flex", justifyContent:"space-between",
+              alignItems:"center", marginBottom:"10px"
+            }}>
+              <span style={{
+                fontSize:"11px", fontWeight:"700",
+                letterSpacing:"0.2em", textTransform:"uppercase", color:ACCENT
+              }}>
+                {PILAR_NAMES[q.pilar]}
+              </span>
+              <span style={{ fontSize:"11px", color:"#555", fontWeight:"600" }}>
+                {idx + 1} / 15
+              </span>
+            </div>
+            <div style={{ height:"2px", borderRadius:"999px", backgroundColor:CARD_BD }}>
+              <div style={{
+                height:"100%", borderRadius:"999px",
+                width:`${((idx + 1) / 15) * 100}%`,
+                backgroundColor:ACCENT,
+                transition:"width 0.4s ease-out"
+              }} />
+            </div>
+          </div>
+
+          {/* Question + Options */}
+          <div style={{
+            flex:1, display:"flex", flexDirection:"column",
+            opacity: fading ? 0 : 1,
+            transform: fading ? "translateY(8px)" : "translateY(0)",
+            transition: "opacity 0.3s ease, transform 0.3s ease"
+          }}>
+            <p style={{
+              fontSize:"11px", fontWeight:"600",
+              letterSpacing:"0.2em", textTransform:"uppercase",
+              color:"#3a3a3a", marginBottom:"8px"
+            }}>
+              Pregunta {q.num}
+            </p>
+            <h2 style={{
+              fontSize:"clamp(18px, 4vw, 22px)", fontWeight:"700",
+              color:"#fff", lineHeight:"1.4", marginBottom:"28px"
+            }}>
+              {q.text}
+            </h2>
+
+            <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+              {q.options.map((opt, i) => (
+                <Option
+                  key={i} label={opt} index={i}
+                  selected={chosen === i} disabled={fading}
+                  onClick={() => pick(i)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <p style={{
+            textAlign:"center", fontSize:"11px",
+            color:"#2a2a2a", marginTop:"24px"
+          }}>
+            Selecciona una opción para continuar
+          </p>
+        </div>
+      );
+    }
+
+    /* ─── SCREEN 3 — RESULTS ─────────────────────────────────── */
+    function ResultsScreen({ answers }) {
+      /* Score calculation */
+      const pilarScores = [0,1,2,3,4].map(p => {
+        const pa = answers.filter((_, i) => QUESTIONS[i].pilar === p);
+        return (pa.reduce((a, b) => a + b, 0) / 12) * 100;
+      });
+      const pilarRend    = pilarScores.map(s => Math.round(100 - s));
+      const scoreGlobal  = pilarScores.reduce((a, b) => a + b, 0) / 5;
+      const rendGlobal   = Math.round(100 - scoreGlobal);
+      const indiceEstres = Math.round(scoreGlobal);
+      const level        = stressLevel(indiceEstres);
+
+      /* Two worst pilars (lowest rendimiento) */
+      const sorted = pilarRend
+        .map((r, i) => ({ r, i }))
+        .sort((a, b) => a.r - b.r);
+      const w1 = sorted[0];
+      const w2 = sorted[1];
+
+      /* Animated counters */
+      const cEstres    = useCounter(indiceEstres, 1600, 300);
+      const cRendGlobal = useCounter(rendGlobal,  1600, 600);
+
+      useEffect(() => { window.scrollTo(0, 0); }, []);
+
+      /* Reusable card wrapper */
+      const Card = ({ children, style = {} }) => (
+        <div style={{
+          backgroundColor:CARD_BG, border:`1px solid ${CARD_BD}`,
+          borderRadius:"8px", padding:"clamp(20px,4vw,32px)",
+          marginBottom:"12px", ...style
+        }}>
+          {children}
+        </div>
+      );
+
+      const Label = ({ children }) => (
+        <p style={{
+          fontSize:"10px", fontWeight:"700", letterSpacing:"0.22em",
+          textTransform:"uppercase", color:"#555", marginBottom:"24px"
+        }}>
+          {children}
+        </p>
+      );
+
+      return (
+        <div style={{ maxWidth:"640px", margin:"0 auto", padding:"48px 16px 64px" }}>
+
+          {/* Header */}
+          <div style={{ textAlign:"center", marginBottom:"36px" }}>
+            <p style={{
+              fontSize:"10px", fontWeight:"700", letterSpacing:"0.35em",
+              textTransform:"uppercase", color:ACCENT, marginBottom:"8px"
+            }}>GORO PRG</p>
+            <h1 style={{ fontSize:"clamp(22px,5vw,28px)", fontWeight:"900", color:"#fff" }}>
+              Tu Diagnóstico Personal
+            </h1>
+          </div>
+
+          {/* ── BLOCK 1: Stress Index ── */}
+          <Card>
+            <Label>Índice de Estrés Crónico™</Label>
+            <div style={{
+              display:"flex", flexDirection:"column", alignItems:"center",
+              gap:"24px"
+            }}>
+
+              {/* Gauge */}
+              <div style={{ position:"relative", flexShrink:0 }}>
+                <Gauge value={indiceEstres} color={level.color} />
+                <div style={{
+                  position:"absolute", inset:0,
+                  display:"flex", flexDirection:"column",
+                  alignItems:"center", justifyContent:"center"
+                }}>
+                  <span style={{
+                    fontSize:"clamp(42px,10vw,52px)", fontWeight:"900",
+                    color:"#fff", lineHeight:1
+                  }}>{cEstres}</span>
+                  <span style={{ fontSize:"16px", color:"#555", fontWeight:"600", marginTop:"2px" }}>%</span>
+                </div>
+              </div>
+
+              {/* Level + description */}
+              <div style={{ textAlign:"center" }}>
+                <span style={{
+                  display:"inline-flex", alignItems:"center", gap:"8px",
+                  fontSize:"13px", fontWeight:"700",
+                  padding:"6px 12px", borderRadius:"4px",
+                  backgroundColor: level.color + "22", color:level.color,
+                  marginBottom:"12px"
+                }}>
+                  <span style={{
+                    width:"8px", height:"8px", borderRadius:"50%",
+                    backgroundColor:level.color, flexShrink:0
+                  }} />
+                  {level.label}
+                </span>
+                <p style={{ fontSize:"14px", color:"#aaa", lineHeight:"1.65" }}>
+                  Tu índice de estrés crónico es del{" "}
+                  <strong style={{ color:"#fff" }}>{indiceEstres}%</strong>.
+                  Este número refleja el impacto acumulado del estrés en tu rendimiento diario.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* ── BLOCK 2: Available Performance ── */}
+          <Card>
+            <Label>Rendimiento Corporal Disponible</Label>
+            <div style={{ display:"flex", alignItems:"flex-end", gap:"6px", marginBottom:"10px" }}>
+              <span style={{
+                fontSize:"clamp(56px,14vw,72px)", fontWeight:"900",
+                lineHeight:1, color:ACCENT
+              }}>{cRendGlobal}</span>
+              <span style={{ fontSize:"24px", color:"#555", fontWeight:"700", marginBottom:"6px" }}>%</span>
+            </div>
+            <p style={{ fontSize:"14px", color:"#aaa", lineHeight:"1.65" }}>
+              Tu cuerpo está funcionando actualmente al{" "}
+              <strong style={{ color:"#fff" }}>{rendGlobal}%</strong>{" "}
+              de su capacidad potencial.
+            </p>
+          </Card>
+
+          {/* ── BLOCK 3: Pilar Diagnosis ── */}
+          <Card>
+            <Label>Diagnóstico por Pilares</Label>
+            <div style={{ display:"flex", flexDirection:"column", gap:"20px" }}>
+              {PILAR_NAMES.map((name, i) => {
+                const v = pilarRend[i];
+                const c = barColor(v);
+                return (
+                  <div key={i}>
+                    <div style={{
+                      display:"flex", justifyContent:"space-between",
+                      alignItems:"center", marginBottom:"8px"
+                    }}>
+                      <span style={{ fontSize:"13px", fontWeight:"500", color:"#ccc" }}>{name}</span>
+                      <span style={{ fontSize:"13px", fontWeight:"700", color:c, tabularNums:true }}>
+                        {v}%
+                      </span>
+                    </div>
+                    <Bar value={v} color={c} delay={i * 110} />
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* ── BLOCK 4: Interpretation ── */}
+          <Card>
+            <Label>Interpretación de Tu Diagnóstico</Label>
+
+            {/* Worst 1 */}
+            <LimitanteBlock
+              rank="Tu principal limitante"
+              rankColor="#ef4444"
+              rankBg="#ef444420"
+              pilarIndex={w1.i}
+              rendimiento={w1.r}
+            />
+
+            <div style={{ height:"1px", backgroundColor:CARD_BD, margin:"24px 0" }} />
+
+            {/* Worst 2 */}
+            <LimitanteBlock
+              rank="Tu segundo limitante"
+              rankColor="#f97316"
+              rankBg="#f9731620"
+              pilarIndex={w2.i}
+              rendimiento={w2.r}
+            />
+          </Card>
+
+          {/* ── BLOCK 5: CTA ── */}
+          <div style={{
+            backgroundColor:"#0c0c0c",
+            border:`1px solid ${ACCENT}28`,
+            borderRadius:"8px",
+            overflow:"hidden"
+          }}>
+
+            {/* — Cabecera de sección — */}
+            <div style={{
+              borderBottom:`1px solid #161616`,
+              padding:"28px clamp(20px,4vw,32px) 24px"
+            }}>
+              <p style={{
+                fontSize:"11px", fontWeight:"700", letterSpacing:"0.25em",
+                textTransform:"uppercase", color:ACCENT, marginBottom:"12px"
+              }}>
+                Antes de que cierres esto
+              </p>
+              <p style={{
+                fontSize:"clamp(17px,4vw,20px)", fontWeight:"800",
+                color:"#fff", lineHeight:"1.35"
+              }}>
+                El verdadero problema del estrés es que te va matando silenciosamente.
+              </p>
+            </div>
+
+            {/* — Copy principal — */}
+            <div style={{ padding:"24px clamp(20px,4vw,32px)", borderBottom:`1px solid #161616` }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:"16px",
+                fontSize:"15px", lineHeight:"1.7" }}>
+                <p style={{ color:"#c0c0c0" }}>
+                  Un día cualquiera te paras a pensar cómo estabas hace unos meses, y te das cuenta de que
+                  ya no eres la misma persona. Te has deteriorado por completo.
+                </p>
+                <p style={{ color:"#c0c0c0" }}>
+                  Tu yo de hace unos meses tenía más energía, más claridad, más capacidad de resolver
+                  problemas que tu yo de ahora.
+                </p>
+                <p style={{ color:"#c0c0c0" }}>
+                  Has normalizado estar agotado. Has normalizado no poder conciliar un buen sueño.
+                  Has normalizado llegar a casa sin ganas de nada, o hablar mal a tu gente por estar
+                  irritado. Has normalizado dejar de salir porque tu trabajo te consume.
+                </p>
+                <p style={{
+                  color:"#fff", fontWeight:"700",
+                  padding:"14px 16px", borderRadius:"4px",
+                  backgroundColor:"#161616", borderLeft:`3px solid ${ACCENT}`
+                }}>
+                  Y lo más jodido: has asumido que esto es el precio del éxito.
+                </p>
+                <p style={{ color:"#c0c0c0" }}>
+                  No lo es. Es el precio de que tu cuerpo lleve demasiado tiempo desregulado a nivel
+                  hormonal.
+                </p>
+                <p style={{ color:"#c0c0c0" }}>
+                  Y lo peor es que has construido una identidad de persona dura, resistente, que puede
+                  con todo. Y no pides ayuda cuando sabes que la necesitas.
+                </p>
+                <p style={{ color:"#c0c0c0" }}>
+                  Cuando las hormonas y sistemas de tu cuerpo no están bien regulados —cortisol,
+                  testosterona, sistema dopaminérgico— tu cuerpo es incapaz de soportar el estrés que
+                  le das con tu trabajo. La buena noticia es que es un problema fisiológico, y se puede
+                  corregir.
+                </p>
+              </div>
+            </div>
+
+            {/* — Bloque de beneficios — */}
+            <div style={{ padding:"24px clamp(20px,4vw,32px)", borderBottom:`1px solid #161616` }}>
+              <p style={{
+                fontSize:"13px", fontWeight:"700", letterSpacing:"0.12em",
+                textTransform:"uppercase", color:"#aaa", marginBottom:"16px"
+              }}>
+                ¿Qué pasaría si en 90 días…
+              </p>
+              <ul style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+                {[
+                  "Tu energía fuera estable de 7am a 9pm sin depender del café",
+                  "Volvieras a tomar decisiones con la claridad y velocidad de hace 3 años",
+                  "Tu cuerpo mejorara físicamente mientras tu negocio sigue creciendo",
+                  "Llegaras a casa con algo real que dar — presencia, energía, ganas",
+                  "Volvieras a disfrutar lo que has construido en vez de solo aguantarlo"
+                ].map((item, i) => (
+                  <li key={i} style={{
+                    display:"flex", alignItems:"flex-start", gap:"12px",
+                    fontSize:"14px", color:"#c0c0c0", lineHeight:"1.5"
+                  }}>
+                    <span style={{
+                      width:"22px", height:"22px", borderRadius:"50%",
+                      backgroundColor:ACCENT + "20", border:`1px solid ${ACCENT}50`,
+                      color:ACCENT, fontSize:"11px", fontWeight:"800",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      flexShrink:0, marginTop:"1px"
+                    }}>✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* — CTA button — */}
+            <div style={{ padding:"24px clamp(20px,4vw,32px)" }}>
+              <a
+                href="https://links.goroprg.com/widget/booking/08g1x2nF4CCm3tJLCFVN"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display:"block", width:"100%",
+                  padding:"18px 24px", textAlign:"center",
+                  backgroundColor:ACCENT, color:"#000",
+                  fontSize:"14px", fontWeight:"900",
+                  letterSpacing:"0.08em", textTransform:"uppercase",
+                  borderRadius:"4px", marginBottom:"14px",
+                  transition:"filter 0.15s, transform 0.1s"
+                }}
+                onMouseEnter={e => e.currentTarget.style.filter = "brightness(1.12)"}
+                onMouseLeave={e => e.currentTarget.style.filter = "brightness(1)"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                Quiero ayuda para solucionar mi problema →
+              </a>
+              <p style={{
+                fontSize:"13px", textAlign:"center",
+                color:"#e0e0e0", lineHeight:"1.65"
+              }}>
+                Goro personalmente analizará tu situación y te dirá con claridad si eres el perfil
+                apto para trabajar 1a1 con él y solucionar tu problema, no desaproveches la
+                oportunidad de poder hablar con un experto...
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+      );
+    }
+
+    function LimitanteBlock({ rank, rankColor, rankBg, pilarIndex, rendimiento }) {
+      return (
+        <div>
+          <span style={{
+            display:"inline-flex", alignItems:"center", gap:"6px",
+            fontSize:"10px", fontWeight:"800", letterSpacing:"0.18em",
+            textTransform:"uppercase", padding:"5px 10px", borderRadius:"3px",
+            backgroundColor:rankBg, color:rankColor, marginBottom:"10px"
+          }}>
+            {rank}
+          </span>
+          <h3 style={{
+            fontSize:"15px", fontWeight:"700",
+            color:"#fff", marginBottom:"4px"
+          }}>
+            {PILAR_NAMES[pilarIndex]}
+          </h3>
+          <p style={{ fontSize:"12px", color:"#444", marginBottom:"8px" }}>
+            Rendimiento:{" "}
+            <span style={{ fontWeight:"700", color:barColor(rendimiento) }}>
+              {rendimiento}%
+            </span>
+          </p>
+          <p style={{ fontSize:"14px", color:"#aaa", lineHeight:"1.7" }}>
+            <strong style={{ color:"#fff" }}>
+              {rank} es {PILAR_DATA[pilarIndex].subject}.
+            </strong>{" "}
+            {PILAR_DATA[pilarIndex].body}
+          </p>
+        </div>
+      );
+    }
+
+    /* ─── APP ────────────────────────────────────────────────── */
+    function App() {
+      const [screen,  setScreen]  = useState("intro");
+      const [answers, setAnswers] = useState(null);
+
+      return (
+        <div style={{ backgroundColor:"#0a0a0a", minHeight:"100vh" }}>
+          {screen === "intro" && (
+            <IntroScreen onStart={() => setScreen("questions")} />
+          )}
+          {screen === "questions" && (
+            <QuestionsScreen
+              onComplete={(a) => { setAnswers(a); setScreen("results"); }}
+            />
+          )}
+          {screen === "results" && answers && (
+            <ResultsScreen answers={answers} />
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
